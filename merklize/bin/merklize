@@ -1,0 +1,6 @@
+#!/bin/sh
+parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+$parent_path/../node_modules/babel-cli/bin/babel-node.js $parent_path/../src/index.js $@
+
+#echo "import merklize from '$parent_path../src'" | ../node_modules/babel-cli/bin/babel-node.js
