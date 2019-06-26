@@ -43,7 +43,7 @@ contract PaymentPoolTest is DSTest {
       _proof[3] = _proof3;
       _proof[4] = _proof4;
       _proof[5] = _proof5;
-    uint256 _ret = paymentPool.balanceForProofWithAddress(0x71B4675491410a24cf0B0a64e9D5646bBE9cd933,uint256(2),uint256(10),bytes32[](_proof));
+    uint256 _ret = paymentPool.balanceForProofWithAddress(0x71B4675491410a24cf0B0a64e9D5646bBE9cd933,uint256(1),uint256(10),bytes32[](_proof));
     assertEq(_ret, 10);
   }
   

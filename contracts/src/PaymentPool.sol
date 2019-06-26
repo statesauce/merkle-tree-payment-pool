@@ -48,7 +48,7 @@ contract PaymentPool is Ownable {
     return true;
   }
 
-  function balanceForProofWithAddress(address _address, uint256 cumulativeAmount, uint256 paymentCycleNumber, bytes32[] memory proof) public view returns(uint256) {
+  function balanceForProofWithAddress(address _address, uint256 paymentCycleNumber, uint256 cumulativeAmount, bytes32[] memory proof) public view returns(uint256) {
     if (payeeRoots[paymentCycleNumber] == 0x0) { return 0; }
 
     bytes32 leaf = keccak256(abi.encodePacked('0x',
@@ -63,8 +63,8 @@ contract PaymentPool is Ownable {
     }
   }
 
-  function balanceForProof(uint256 amount, uint256 paymentCycle, bytes32[] memory proof) public view returns(uint256) {
-    return balanceForProofWithAddress(msg.sender, amount, paymentCycle, proof);
+  function balanceForProof(uint256 paymentCycle, uint256 amount, bytes32[] memory proof) public view returns(uint256) {
+    return balanceForProofWithAddress(msg.sender, paymentCycle, amount, proof);
   }
 
   function withdraw(uint256 paymentCycle, uint256 amount, bytes32[] memory proof) public returns(bool) {
