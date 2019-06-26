@@ -12,10 +12,12 @@ contract PaymentPoolTest is DSTest {
     token = new Token();
     paymentPool = new PaymentPool(token);
     paymentPool.submitPayeeMerkleRoot(
-                                     hex"87a7fd40b4979193157aedd790a286cfa381e76866404207a6d0c816412f97c3");
+                                     hex"f14e7ccceae0b4419ae66a375b6087af2857b7ab3c50074ada72fa3d7e7b80a0");
     token.mint(address(this), 100);
   }
-  
+  function testNumPaymentCycle() public {
+    assertEq(paymentPool.numPaymentCycles(),2);
+  }
 
   function testUIntToString() public {
     assertEq(keccak256(abi.encodePacked(paymentPool.uintToString(uint256(9999999999999999)))),
@@ -28,8 +30,20 @@ contract PaymentPoolTest is DSTest {
       keccak256("c257274276a4e539741ca11b590b9447b26a8051"));
   }
   function testBalanceForProofWithAddress() public {
-    bytes memory _proof = hex"0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000a3d17fc903d1485a25e68400773d971e76c10b9bbb137e69a8814800a39f2fcaafa6e2e06009fcca9bac61e066ff0f30093dbd2e99a3e65dd1c0b1762bf7b19426a02e390b36463a6580c5e776514ce07e0f74add3bb42f0d5f27dc9938c5f982";
-    uint256 _ret = paymentPool.balanceForProofWithAddress(0xEEc45e23F69b5267Be75f1db3fD8fdd7Ec961f46,_proof);
+      bytes32 _proof0 = hex"c261d3b644efd3ae89e46765a06fd901";
+      bytes32 _proof1 = hex"b7f526ae208703e536f8769e8db6c096";
+      bytes32 _proof2 = hex"642b7b4990ba5dd6f0ff4a21046e605f";
+      bytes32 _proof3 = hex"07d5635df8a66738040be1fb4c486046";
+      bytes32 _proof4 = hex"0a4c88bad76d53567d562ee1414f9272";
+      bytes32 _proof5 = hex"a1daa1e7f887c03e0f9c890457ae934e";
+      bytes32[] memory _proof = new bytes32[](6);
+      _proof[0] = _proof0;
+      _proof[1] = _proof1;
+      _proof[2] = _proof2;
+      _proof[3] = _proof3;
+      _proof[4] = _proof4;
+      _proof[5] = _proof5;
+    uint256 _ret = paymentPool.balanceForProofWithAddress(0x71B4675491410a24cf0B0a64e9D5646bBE9cd933,uint256(2),uint256(10),bytes32[](_proof));
     assertEq(_ret, 10);
   }
   

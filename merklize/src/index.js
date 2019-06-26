@@ -16,6 +16,7 @@ var argv = require('yargs')
       (argv) => {
           let paymentsJson = JSON.parse(fs.readFileSync(argv.ifile))
           for (var addr in paymentsJson) {
+              console.log(addr)
               payments.push({ payee: addr.toLowerCase(), amount: paymentsJson[addr] })
               accounts.push(addr.toLowerCase())
           }
@@ -24,7 +25,7 @@ var argv = require('yargs')
           console.log("payee: " + accounts[2])
           console.log("payee: " + payments[2].payee)
           console.log("amount: " + payments[2].amount)
-          let proof = merkleTree.hexProofForPayee(accounts[2], 1)
+          let proof = merkleTree.hexProofForPayee(accounts[2], 2)
           console.log(proof)
           console.log("payment cycle: " + proof.slice(0,66) + " amount: 0x" + proof.slice(66,130) )
           console.log("proof: 0x" + proof.slice(130))
