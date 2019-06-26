@@ -1,10 +1,10 @@
 pragma solidity ^0.5.6;
 
-import '../zeppelin-solidity/contracts/math/SafeMath.sol';
-import '../zeppelin-solidity/contracts/token/ERC20/ERC20.sol';
-import '../zeppelin-solidity/contracts/token/ERC20/SafeERC20.sol';
-import '../zeppelin-solidity/contracts/cryptography/MerkleProof.sol';
-import '../zeppelin-solidity/contracts/ownership/Ownable.sol';
+import 'node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol';
+import 'node_modules/openzeppelin-solidity/contracts/token/ERC20/ERC20.sol';
+import 'node_modules/openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol';
+import 'node_modules/openzeppelin-solidity/contracts/cryptography/MerkleProof.sol';
+import 'node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol';
 
 contract PaymentPool is Ownable {
 
@@ -48,15 +48,7 @@ contract PaymentPool is Ownable {
     return true;
   }
 
-  function balanceForProofWithAddress(address _address, bytes memory proof) public view returns(uint256) {
-    bytes32[] memory meta;
-    bytes32[] memory _proof;
-
-    (meta, _proof) = splitIntoBytes32(proof, 2);
-    if (meta.length != 2) { return 0; }
-
-    uint256 paymentCycleNumber = uint256(meta[0]);
-    uint256 cumulativeAmount = uint256(meta[1]);
+  function balanceForProofWithAddress(address _address, uint256 cumulativeAmount, uint256 paymentCycleNumber, bytes32[] memory proof) public view returns(uint256) {
     if (payeeRoots[paymentCycleNumber] == 0x0) { return 0; }
 
     bytes32 leaf = keccak256(abi.encodePacked('0x',
@@ -64,22 +56,22 @@ contract PaymentPool is Ownable {
                              ',',
                                               uintToString(cumulativeAmount)));
     if (withdrawals[_address] < cumulativeAmount &&
-        MerkleProof.verify(_proof,payeeRoots[paymentCycleNumber], leaf)) {
+        MerkleProof.verify(proof,payeeRoots[paymentCycleNumber], leaf)) {
       return cumulativeAmount.sub(withdrawals[_address]);
     } else {
       return 0;
     }
   }
 
-  function balanceForProof(bytes memory proof) public view returns(uint256) {
-    return balanceForProofWithAddress(msg.sender, proof);
+  function balanceForProof(uint256 amount, uint256 paymentCycle, bytes32[] memory proof) public view returns(uint256) {
+    return balanceForProofWithAddress(msg.sender, amount, paymentCycle, proof);
   }
 
-  function withdraw(uint256 amount, bytes memory proof) public returns(bool) {
+  function withdraw(uint256 paymentCycle, uint256 amount, bytes32[] memory proof) public returns(bool) {
     require(amount > 0);
     require(token.balanceOf(address(this)) >= amount);
 
-    uint256 balance = balanceForProof(proof);
+    uint256 balance = balanceForProof(paymentCycle, amount, proof);
     require(balance >= amount);
 
     withdrawals[msg.sender] = withdrawals[msg.sender].add(amount);
@@ -89,7 +81,7 @@ contract PaymentPool is Ownable {
   }
 
   //TODO move to lib
-  function splitIntoBytes32(bytes memory byteArray, uint256 numBytes32) pure returns (bytes32[] memory bytes32Array,
+  function splitIntoBytes32(bytes memory byteArray, uint256 numBytes32) pure internal returns (bytes32[] memory bytes32Array,
                                                                                         bytes32[] memory remainder) {
     //if (
     require(!(byteArray.length % 32 != 0 ||
