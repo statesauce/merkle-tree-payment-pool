@@ -67,11 +67,11 @@ contract PaymentPool is Ownable{
   function balanceForProof(uint256 cumAmount, uint256 _paymentCycle,  bytes32[] memory proof) public view returns(uint256) {
     return balanceForProofWithAddress(msg.sender, cumAmount, _paymentCycle, proof);
   }
-  function withdraw(uint256 _paymentCycle, uint256 amount, uint256 cumAmount, bytes32[] memory proof) public returns(bool) {
+  function withdraw(uint256 amount, uint256 cumAmount, uint256 _paymentCycle, bytes32[] memory proof) public returns(bool) {
     require(amount > 0);
     require(token.balanceOf(address(this)) >= amount);
 
-    uint256 balance = balanceForProof(_paymentCycle, cumAmount, proof);
+    uint256 balance = balanceForProof(cumAmount, _paymentCycle, proof);
     require(balance >= amount);
 
     withdrawals[msg.sender] = withdrawals[msg.sender].add(amount);
