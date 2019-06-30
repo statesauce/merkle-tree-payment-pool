@@ -7,7 +7,6 @@
 
 # dependencies
 /node_modules
-/merklize/node_modules
 
 # misc
 npm-debug.log
