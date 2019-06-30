@@ -1,6 +1,6 @@
-import CumulativePaymentTree from "../packages/merkle-payments/lib/cumulative-payment-tree.js.js";
-import { assertRevert } from "./helpers/utils";
 import Web3 from "web3";
+import CumulativePaymentTree from "../lib/cumulative-payment-tree.js";
+import { assertRevert } from "./utils";
 
 const PaymentPool = artifacts.require("PaymentPool");
 const Token = artifacts.require("Token");

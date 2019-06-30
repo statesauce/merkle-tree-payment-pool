@@ -4,6 +4,7 @@
 /dist
 /tmp
 /build
+/lib
 
 # dependencies
 /node_modules

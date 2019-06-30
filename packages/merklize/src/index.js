@@ -1,15 +1,17 @@
 import Web3 from "web3";
 import fs from "fs";
 import util from "util";
-import CumulativePaymentTree from "../../merkle-payments/lib/cumulative-payment-tree.js.js";
+import CumulativePaymentTree from "@statesauce/merkle-payments/lib/cumulative-payment-tree.js.js";
 
 const web3 = new Web3(
   Web3.givenProvider || "ws://some.local-or-remote.node:8546",
   null,
   {}
 );
+
 let accounts = [];
 let payments = [];
+
 var argv = require("yargs")
   .command(
     "make root-hash <ifile>",
