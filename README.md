@@ -71,8 +71,8 @@ It is probably a good idea to organize the published proofs by payment cycle num
 
 ```js
 // `paymentCycleNumber` is set to the paymentCycle that ended when the root was submitted
-paymentList.forEach(({ payee }) => {
-  let proof = paymentTree.hexProofForPayee(payee, paymentCycle);
+paymentList.forEach((payee) => {
+  let proof = paymentTree.hexProofForPayee(payee);
   console.log(`Payee ${payee} proof is: ${proof}`);
 });
 ```
@@ -80,13 +80,13 @@ paymentList.forEach(({ payee }) => {
 
 A payee can view the balance the is available to be withdrawn from the payment pool using their proof by calling the `PaymentPool` contract:
 ```js
-let balance = await paymentPool.balanceForProofWithAddress(payeeAddress, proof);
+let balance = await paymentPool.balanceForProofWithAddress(payeeAddress, cumulativeAmount, paymentCycle, proof);
 ```
 
 
 A payee can then withdraw tokens from the payment pool using their proof by calling the `PaymentPool` contract. A payee is allowed to withdraw any amount up to the amount allowed by the proof. The payees' withdrawals are tracked by the payment pool, such that a payee cannot withdraw more tokens than they are allotted from the payment pool:
 ```js
-await paymentPool.withdraw(15, proof); // withdraw 15 tokens from the payment pool
+await paymentPool.withdraw(withdrawalAmount, cumulativeAmount, paymentCycle, proof); // withdraw 15 tokens from the payment pool
 ```
 
 
