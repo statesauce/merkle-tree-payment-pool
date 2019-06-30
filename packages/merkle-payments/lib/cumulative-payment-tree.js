@@ -53,26 +53,6 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
  *
  */
 
-/*
-"balance of proof for payee that has mulitple entries in the payment list returns the sum of all their amounts in the payment pool"
-this is the current problem test.
-
-> soliditySha3('0x95A59988186b582325004aC7C8d5724fD21414c3',packBN(toBN(4)))
-'0x96cf572e373c66b3e833262059ae989434960c64cfe47af650c9b89abbbd0f6f'
-> soliditySha3('0x95A59988186b582325004aC7C8d5724fD21414c3',4)
-'0x96cf572e373c66b3e833262059ae989434960c64cfe47af650c9b89abbbd0f6f'
-
-solution is roughly around here. need to update old cumulative payment tree lookup data method
-which is not yet implemented
-
-
-
-*/
-function packBN(bigNum) {
-  var zeros = "0x0000000000000000000000000000000000000000000000000000000000000000";
-  var hexNum = (0, _web3Utils.toHex)(bigNum).slice(2);
-  return zeros.slice(0, 66 - hexNum.length) + hexNum;
-}
 
 var CumulativePaymentTree =
 /*#__PURE__*/
@@ -81,36 +61,23 @@ function (_MerkleTree) {
 
   function CumulativePaymentTree(paymentList) {
     _classCallCheck(this, CumulativePaymentTree);
+    let filteredPaymentList = paymentList.filter(payment => payment.payee && payment.amount);
+    let groupedPayees = _.groupBy(filteredPaymentList, payment => payment.payee);
+    let reducedPaymentList = Object.keys(groupedPayees).map(payee => {
+      let payments = groupedPayees[payee];
+      let amount = _.reduce(payments, (sum, payment) => sum + payment.amount, 0);
+      return { payee, amount };
+    });
 
-    // const leaves = paymentList.map(v => {
-    //   return soliditySha3(v.payee,v.amount)
-    //   }
-    // )
-    var leaves = paymentList.map(function (v) {
-      return v.payee + v.amount;
+    var leaves = reducedPaymentList.map(function (v) {
+      return _web3Utils.soliditySha3(v.payee,v.amount);
     });
     return _possibleConstructorReturn(this, _getPrototypeOf(CumulativePaymentTree).call(this, leaves, _keccak["default"], {
       sort: true,
-      hashLeaves: true
-    })); // const root = tree.getHexRoot()
-    // const leaf = soliditySha3(payments[2].payee, payments[2].amount)
-    // const proof = tree.getHexProof(leaf)
-    // let filteredPaymentList = paymentList.filter(payment => payment.payee && payment.amount);
-    // let groupedPayees = _.groupBy(filteredPaymentList, payment => payment.payee);
-    // let reducedPaymentList = Object.keys(groupedPayees).map(payee => {
-    //   let payments = groupedPayees[payee];
-    //   let amount = _.reduce(payments, (sum, payment) => sum + payment.amount, 0);
-    //   return { payee, amount };
-    // });
-    // let paymentNodes = reducedPaymentList.map(payment => payment.payee + ',' + payment.amount);
-    // super(paymentNodes);
-    // this.paymentNodes = paymentNodes;
-    // this.paymentList = reducedPaymentList;
-  } // amountForPayee(payee) {
-  //   let payment = _.find(this.paymentList, { payee });
-  //   if (!payment) { return 0; }
-  //   return payment.amount;
-  // }
+      hashLeaves: false
+    }));
+  }
+
 
 
   _createClass(CumulativePaymentTree, [{
