@@ -1,39 +1,8 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports["default"] = void 0;
-
-var _merkletreejs = require("merkletreejs");
-
-var _web3Utils = require("web3-utils");
-
-var _ethereumjsUtil = require("ethereumjs-util");
-
-var _keccak = _interopRequireDefault(require("keccak256"));
-
-var _lodash = _interopRequireDefault(require("lodash/lodash"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
-
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
-
-function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
-
-function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
-
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+import { MerkleTree } from "merkletreejs";
+import { soliditySha3, toHex, toBN } from "web3-utils";
+import { bufferToHex, zeros } from "ethereumjs-util";
+import keccak256 from "keccak256";
+import _ from "lodash/lodash";
 
 /*
  * `paymentList` is an array of objects that have a property `payee` to hold the
@@ -53,14 +22,8 @@ function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || func
  *
  */
 
-
-var CumulativePaymentTree =
-/*#__PURE__*/
-function (_MerkleTree) {
-  _inherits(CumulativePaymentTree, _MerkleTree);
-
-  function CumulativePaymentTree(paymentList) {
-    _classCallCheck(this, CumulativePaymentTree);
+export default class CumulativePaymentTree extends MerkleTree {
+  constructor(paymentList) {
     let filteredPaymentList = paymentList.filter(payment => payment.payee && payment.amount);
     let groupedPayees = _.groupBy(filteredPaymentList, payment => payment.payee);
     let reducedPaymentList = Object.keys(groupedPayees).map(payee => {
@@ -70,40 +33,22 @@ function (_MerkleTree) {
     });
 
     var leaves = reducedPaymentList.map(function (v) {
-      return _web3Utils.soliditySha3(v.payee,v.amount);
+      return soliditySha3(v.payee,v.amount);
     });
-    return _possibleConstructorReturn(this, _getPrototypeOf(CumulativePaymentTree).call(this, leaves, _keccak["default"], {
-      sort: true,
-      hashLeaves: false
-    }));
+    super(leaves, keccak256, { sort: true });
+
   }
 
+  getLeafForPayee(payment) {
+    return soliditySha3(payment.payee, payment.amount);
+  }
 
-
-  _createClass(CumulativePaymentTree, [{
-    key: "getLeafForPayee",
-    value: function getLeafForPayee(payment) {
-      return (0, _web3Utils.soliditySha3)(payment.payee, payment.amount);
+  hexProofForPayee(payment) {
+    let proof = this.getHexProof(this.getLeafForPayee(payment));
+    if (!proof) {
+      return bufferToHex(zeros(32));
     }
-  }, {
-    key: "getLeafForPayeeNoHash",
-    value: function getLeafForPayeeNoHash(payment) {
-      return (0, _web3Utils.soliditySha3)(payment.payee, payment.amount);
-    }
-  }, {
-    key: "hexProofForPayee",
-    value: function hexProofForPayee(payment) {
-      var proof = this.getHexProof(this.getLeafForPayee(payment));
 
-      if (!proof) {
-        return (0, _ethereumjsUtil.bufferToHex)((0, _ethereumjsUtil.zeros)(32));
-      }
-
-      return proof;
-    }
-  }]);
-
-  return CumulativePaymentTree;
-}(_merkletreejs.MerkleTree);
-
-exports["default"] = CumulativePaymentTree;
+    return proof;
+  }
+}
