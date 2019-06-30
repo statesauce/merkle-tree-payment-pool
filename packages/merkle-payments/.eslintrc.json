@@ -1,0 +1,20 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 10,
+    "sourceType": "module"
+  },
+  "extends": ["prettier"],
+  "env": {
+    "node": true,
+    "mocha": true
+  },
+  "globals": {
+    "web3": true,
+    "contract": true,
+    "artifacts": true,
+    "assert": true
+  },
+  "rules": {
+    "no-console": "warn"
+  }
+}
