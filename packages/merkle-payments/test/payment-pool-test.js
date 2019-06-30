@@ -255,8 +255,6 @@ contract("PaymentPool", function(accounts) {
         await token.mint(accounts[0], 1);
         paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
-        console.log("old: " + oldPaymentCycle);
-        console.log("new: " + paymentCycle);
         let updatedProof = updatedMerkleTree.hexProofForPayee(
           updatedPayments[payeeIndex]
         );
@@ -296,7 +294,7 @@ contract("PaymentPool", function(accounts) {
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
 
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
         let updatedProof = updatedMerkleTree.hexProofForPayee(
           updatedPayments[8]
@@ -324,21 +322,19 @@ contract("PaymentPool", function(accounts) {
         });
         let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
         let updatedRoot = updatedMerkleTree.getHexRoot();
-
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
 
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
-        let updatedProof = updatedMerkleTree.hexProofForPayee(
-          payee,
-          paymentCycle
-        );
+        let updatedProof = updatedMerkleTree.hexProofForPayee({payee: payee, amount: 18});
         await paymentPool.submitPayeeMerkleRoot(updatedRoot);
-
-        let balance = await paymentPool.balanceForProof(updatedProof, {
-          from: payee
-        });
+        let balance = await paymentPool.balanceForProof(
+          18,
+          paymentCycle,updatedProof, {
+            from: payee
+          }
+        );
         assert.equal(
           balance.toNumber(),
           18,
@@ -362,12 +358,11 @@ contract("PaymentPool", function(accounts) {
         await token.mint(paymentPool.address, paymentPoolBalance);
         paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
-        proof = merkleTree.hexProofForPayee(payee, paymentCycle);
+        proof = merkleTree.hexProofForPayee(payments[payeeIndex]);
         await paymentPool.submitPayeeMerkleRoot(root);
       });
-
       it("payee can withdraw up to their allotted amount from pool", async function() {
-        let txn = await paymentPool.withdraw(paymentAmount, proof, {
+        let txn = await paymentPool.withdraw(paymentAmount, paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -382,7 +377,7 @@ contract("PaymentPool", function(accounts) {
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -407,10 +402,9 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
       });
-
       it("payee can make a withdrawal less than their allotted amount from the pool", async function() {
         let withdrawalAmount = 8;
-        let txn = await paymentPool.withdraw(withdrawalAmount, proof, {
+        let txn = await paymentPool.withdraw(withdrawalAmount, paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -425,10 +419,9 @@ contract("PaymentPool", function(accounts) {
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
-
         assert.equal(
           payeeBalance.toNumber(),
           withdrawalAmount,
@@ -450,16 +443,15 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
       });
-
       it("payee can make mulitple withdrawls within their allotted amount from the pool", async function() {
         let withdrawalAmount = 4 + 6;
-        await paymentPool.withdraw(4, proof, { from: payee });
-        await paymentPool.withdraw(6, proof, { from: payee });
+        await paymentPool.withdraw(4, paymentAmount, paymentCycle, proof, { from: payee });
+        await paymentPool.withdraw(6, paymentAmount, paymentCycle, proof, { from: payee });
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -489,13 +481,13 @@ contract("PaymentPool", function(accounts) {
         let withdrawalAmount = 11;
         await assertRevert(
           async () =>
-            await paymentPool.withdraw(withdrawalAmount, proof, { from: payee })
+            await paymentPool.withdraw(withdrawalAmount, paymentAmount, paymentCycle, proof, { from: payee })
         );
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -518,71 +510,20 @@ contract("PaymentPool", function(accounts) {
           proofBalance.toNumber(),
           paymentAmount,
           "the proof balance is correct"
-        );
-      });
-
-      it("payee cannot withdraw using a proof whose metadata has been tampered with", async function() {
-        let withdrawalAmount = 11;
-        // the cumulative amount in in the proof's meta has been increased artifically to 12 tokens: note the "c" in the 127th position of the proof, here ---v
-        let tamperedProof =
-          "0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000c2e46ed0464b1e11097030a04086c9f068606b4c9808ccdac0343863c5e4f8244749e106fa8d91408f2578e5d93447f727f59279be85ce491faf212a7201d3b836b94214bff74426647e9cf0b5c5c3cbc9cef25b7e08759ca2b85357ec22c9b40";
-
-        await assertRevert(
-          async () =>
-            await paymentPool.withdraw(withdrawalAmount, tamperedProof, {
-              from: payee
-            })
-        );
-
-        let payeeBalance = await token.balanceOf(payee);
-        let poolBalance = await token.balanceOf(paymentPool.address);
-        let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
-          from: payee
-        });
-        let tamperedProofBalance = await paymentPool.balanceForProof(
-          tamperedProof,
-          { from: payee }
-        );
-
-        assert.equal(
-          payeeBalance.toNumber(),
-          0,
-          "the payee balance is correct"
-        );
-        assert.equal(
-          poolBalance.toNumber(),
-          paymentPoolBalance,
-          "the pool balance is correct"
-        );
-        assert.equal(
-          withdrawals.toNumber(),
-          0,
-          "the withdrawals amount is correct"
-        );
-        assert.equal(
-          proofBalance.toNumber(),
-          paymentAmount,
-          "the proof balance is correct"
-        );
-        assert.equal(
-          tamperedProofBalance.toNumber(),
-          0,
-          "the tampered proof balance is 0 tokens"
         );
       });
 
       it("payee cannot make mulitple withdrawls that total to more than their allotted amount from the pool", async function() {
         let withdrawalAmount = 4;
-        await paymentPool.withdraw(4, proof, { from: payee });
+        await paymentPool.withdraw(4, paymentAmount, paymentCycle, proof, { from: payee });
         await assertRevert(
-          async () => await paymentPool.withdraw(7, proof, { from: payee })
+          async () => await paymentPool.withdraw(7, paymentAmount, paymentCycle, proof, { from: payee })
         );
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -612,13 +553,13 @@ contract("PaymentPool", function(accounts) {
         let withdrawalAmount = 0;
         await assertRevert(
           async () =>
-            await paymentPool.withdraw(withdrawalAmount, proof, { from: payee })
+            await paymentPool.withdraw(withdrawalAmount, paymentAmount, paymentCycle, proof, { from: payee })
         );
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -648,7 +589,7 @@ contract("PaymentPool", function(accounts) {
         let withdrawalAmount = 10;
         await assertRevert(
           async () =>
-            await paymentPool.withdraw(withdrawalAmount, proof, {
+            await paymentPool.withdraw(withdrawalAmount, paymentAmount, paymentCycle, proof, {
               from: accounts[0]
             })
         );
@@ -656,7 +597,7 @@ contract("PaymentPool", function(accounts) {
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, paymentCycle, proof, {
           from: payee
         });
 
@@ -681,7 +622,6 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
       });
-
       it("payee cannot withdraw their allotted tokens from the pool when the pool does not have enough tokens", async function() {
         let insufficientFundsPayeeIndex = 7;
         let insufficientFundsPayee =
@@ -689,14 +629,15 @@ contract("PaymentPool", function(accounts) {
         let insufficientFundsPaymentAmount =
           payments[insufficientFundsPayeeIndex].amount;
         let insufficientFundsProof = merkleTree.hexProofForPayee(
-          insufficientFundsPayee,
-          paymentCycle
+          {payee: insufficientFundsPayee, amount: insufficientFundsPaymentAmount}
         );
 
         await assertRevert(
           async () =>
             await paymentPool.withdraw(
               insufficientFundsPaymentAmount,
+              insufficientFundsPaymentAmount,
+              paymentCycle,
               insufficientFundsProof,
               { from: insufficientFundsPayee }
             )
@@ -706,6 +647,8 @@ contract("PaymentPool", function(accounts) {
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(insufficientFundsPayee);
         let proofBalance = await paymentPool.balanceForProof(
+          insufficientFundsPaymentAmount,
+          paymentCycle,
           insufficientFundsProof,
           { from: insufficientFundsPayee }
         );
@@ -731,8 +674,18 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
       });
-
+      /*  withdraw(uint256 amount, uint256 cumAmount, uint256 _paymentCycle,  bytes32[] memory proof)
+          balanceForProofWithAddress(
+                address _address,
+                uint256 cumAmount,
+                uint256 _paymentCycle,
+                bytes32[] memory proof) 
+      */
       it("payee withdraws their allotted amount from an older proof", async function() {
+        // for some reason bleeds away paymentCycle from last test to here
+        //paymentCycle = await paymentPool.numPaymentCycles();
+        //paymentCycle = paymentCycle.toNumber();
+        
         let updatedPayments = payments.slice();
         updatedPayments[payeeIndex].amount += 2;
         let updatedPaymentAmount = updatedPayments[payeeIndex].amount;
@@ -741,29 +694,28 @@ contract("PaymentPool", function(accounts) {
 
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
-
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        let oldPaymentCycle = paymentCycle;
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
         let updatedProof = updatedMerkleTree.hexProofForPayee(
-          payee,
-          paymentCycle
+          updatedPayments[payeeIndex]
         );
         await paymentPool.submitPayeeMerkleRoot(updatedRoot);
 
         let withdrawalAmount = 8;
-        await paymentPool.withdraw(withdrawalAmount, proof, { from: payee });
-
+        await paymentPool.withdraw(withdrawalAmount, paymentAmount, oldPaymentCycle, proof, { from: payee });
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, oldPaymentCycle, proof, {
           from: payee
         });
-        let udpatedProofBalance = await paymentPool.balanceForProof(
+        let updatedProofBalance = await paymentPool.balanceForProof(
+          updatedPayments[payeeIndex].amount,
+          paymentCycle,
           updatedProof,
           { from: payee }
         );
-
         assert.equal(
           payeeBalance.toNumber(),
           withdrawalAmount,
@@ -785,7 +737,7 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
         assert.equal(
-          udpatedProofBalance.toNumber(),
+          updatedProofBalance.toNumber(),
           updatedPaymentAmount - withdrawalAmount,
           "the updated proof balance is correct"
         );
@@ -800,27 +752,28 @@ contract("PaymentPool", function(accounts) {
 
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
-
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        let oldPaymentCycle = paymentCycle
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
         let updatedProof = updatedMerkleTree.hexProofForPayee(
-          payee,
-          paymentCycle
+          updatedPayments[payeeIndex]
         );
         await paymentPool.submitPayeeMerkleRoot(updatedRoot);
 
         let withdrawalAmount = 8;
-        await paymentPool.withdraw(withdrawalAmount, updatedProof, {
+        await paymentPool.withdraw(withdrawalAmount, updatedPayments[payeeIndex].amount, paymentCycle, updatedProof, {
           from: payee
         });
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, oldPaymentCycle, proof, {
           from: payee
         });
-        let udpatedProofBalance = await paymentPool.balanceForProof(
+        let updatedProofBalance = await paymentPool.balanceForProof(
+          updatedPayments[payeeIndex].amount,
+          paymentCycle,
           updatedProof,
           { from: payee }
         );
@@ -846,7 +799,7 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
         assert.equal(
-          udpatedProofBalance.toNumber(),
+          updatedProofBalance.toNumber(),
           updatedPaymentAmount - withdrawalAmount,
           "the updated proof balance is correct"
         );
@@ -861,26 +814,27 @@ contract("PaymentPool", function(accounts) {
 
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
-
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        let oldPaymentCycle = paymentCycle
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
         let updatedProof = updatedMerkleTree.hexProofForPayee(
-          payee,
-          paymentCycle
+          updatedPayments[payeeIndex]
         );
         await paymentPool.submitPayeeMerkleRoot(updatedRoot);
 
         let withdrawalAmount = 8 + 4;
-        await paymentPool.withdraw(8, proof, { from: payee });
-        await paymentPool.withdraw(4, updatedProof, { from: payee });
+        await paymentPool.withdraw(8, paymentAmount, oldPaymentCycle, proof, { from: payee });
+        await paymentPool.withdraw(4, updatedPayments[payeeIndex].amount, paymentCycle, updatedProof, { from: payee });
 
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, oldPaymentCycle, proof, {
           from: payee
         });
-        let udpatedProofBalance = await paymentPool.balanceForProof(
+        let updatedProofBalance = await paymentPool.balanceForProof(
+          updatedPayments[payeeIndex].amount,
+          paymentCycle,
           updatedProof,
           { from: payee }
         );
@@ -906,7 +860,7 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
         assert.equal(
-          udpatedProofBalance.toNumber(),
+          updatedProofBalance.toNumber(),
           updatedPaymentAmount - withdrawalAmount,
           "the updated proof balance is correct"
         );
@@ -921,28 +875,28 @@ contract("PaymentPool", function(accounts) {
 
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
-
-        let paymentCycle = await paymentPool.numPaymentCycles();
+        let oldPaymentCycle = paymentCycle
+        paymentCycle = await paymentPool.numPaymentCycles();
         paymentCycle = paymentCycle.toNumber();
         let updatedProof = updatedMerkleTree.hexProofForPayee(
-          payee,
-          paymentCycle
+          updatedPayments[payeeIndex]
         );
         await paymentPool.submitPayeeMerkleRoot(updatedRoot);
 
         let withdrawalAmount = 8;
-        await paymentPool.withdraw(8, updatedProof, { from: payee });
+        await paymentPool.withdraw(8, updatedPayments[payeeIndex].amount, paymentCycle, updatedProof, { from: payee });
         await assertRevert(async () =>
-          paymentPool.withdraw(4, proof, { from: payee })
+          paymentPool.withdraw(4, paymentAmount, oldPaymentCycle, proof, { from: payee })
         ); // this proof only permits 10 - 8 tokens to be withdrawn, even though the newer proof permits 12 - 8 tokens to be withdrawn
-
         let payeeBalance = await token.balanceOf(payee);
         let poolBalance = await token.balanceOf(paymentPool.address);
         let withdrawals = await paymentPool.withdrawals(payee);
-        let proofBalance = await paymentPool.balanceForProof(proof, {
+        let proofBalance = await paymentPool.balanceForProof(paymentAmount, oldPaymentCycle, proof, {
           from: payee
         });
-        let udpatedProofBalance = await paymentPool.balanceForProof(
+        let updatedProofBalance = await paymentPool.balanceForProof(
+          updatedPayments[payeeIndex].amount,
+          paymentCycle,
           updatedProof,
           { from: payee }
         );
@@ -968,7 +922,7 @@ contract("PaymentPool", function(accounts) {
           "the proof balance is correct"
         );
         assert.equal(
-          udpatedProofBalance.toNumber(),
+          updatedProofBalance.toNumber(),
           updatedPaymentAmount - withdrawalAmount,
           "the updated proof balance is correct"
         );
