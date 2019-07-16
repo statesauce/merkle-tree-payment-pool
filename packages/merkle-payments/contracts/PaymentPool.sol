@@ -26,12 +26,9 @@ contract PaymentPool is Initializable, Ownable {
     );
     event PayeeWithdraw(address indexed payee, uint256 amount);
 
-    function initialize(ERC20 _token, uint256 _numPaymentCycles)
-        public
-        initializer
-    {
+    function initialize(ERC20 _token) public initializer {
         token = _token;
-        numPaymentCycles = _numPaymentCycles;
+        numPaymentCycles = 1;
         currentPaymentCycleStartBlock = block.number;
     }
 
