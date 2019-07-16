@@ -24,6 +24,8 @@ The way this payment pool works is that for each _payment cycle_ the contract ow
 
 Link and deploy the `PaymentPool` contract specying whatever ERC-20 token will be governed by the payment pool. From the tests this looks like the following (a truffle migration script would follow a similar approach):
 
+**TODO -- Update docs for usage with zos**
+
 ```js
 const PaymentPool = artifacts.require("./PaymentPool.sol");
 const MerkleProofLib = artifacts.require("MerkleProof.sol"); // From open zeppelin

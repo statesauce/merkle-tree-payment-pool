@@ -5,7 +5,8 @@
     "postinstall": "npx lerna bootstrap",
     "start-ganache": "ganache-cli",
     "build-payments": "lerna exec --scope @statesauce/merkle-payments -- npm run build",
-    "test-payments": "lerna exec --scope @statesauce/merkle-payments -- npm test"
+    "test-payments": "lerna exec --scope @statesauce/merkle-payments -- npm test",
+    "lint-contracts": "lerna exec --scope @statesauce/merkle-payments -- npm run lint"
   },
   "devDependencies": {
     "ganache-cli": "^6.4.4",

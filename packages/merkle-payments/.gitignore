@@ -17,3 +17,5 @@ testem.log
 accounts.txt
 *.csv
 *.log
+
+.zos.session

@@ -4,19 +4,20 @@
   "version": "0.1.0",
   "main": "lib/index.js",
   "files": [
-    "build/",
     "contracts/",
-    "migrations/",
-    "test/",
-    "src/"
+    "lib/",
+    "src/",
+    "test/"
   ],
   "scripts": {
     "build": "babel src/ --out-dir lib/",
     "clean": "rimraf lib/",
-    "dev": "run-when-changed --watch 'src/**/*.js'  --watch node_modules/**/*.js --exec 'npm run prepare'",
+    "dev": "run-when-changed --watch 'src/*.js'  --watch node_modules/**/*.js --exec 'npm run prepare'",
     "prepare": "npm run clean && npm run build",
     "pretest": "npm run prepare",
-    "prettier": "prettier --write \"src/**/*.js\"",
+    "prettier": "prettier --write \"src/*.js\"",
+    "prettier-contracts": "prettier --write \"contracts/*.sol\"",
+    "lint": "solhint \"contracts/*.sol\"",
     "test": "truffle test"
   },
   "repository": {
@@ -54,10 +55,14 @@
     "merkletreejs": "^0.1.6",
     "openzeppelin-solidity": "^2.3.0",
     "prettier": "^1.18.2",
+    "prettier-plugin-solidity": "^1.0.0-alpha.27",
     "rimraf": "^2.6.3",
+    "solhint": "^2.1.0",
+    "solhint-plugin-prettier": "0.0.3",
     "truffle": "^5.0.25",
     "web3": "^1.0.0-beta.55",
-    "web3-utils": "^1.0.0-beta.55"
+    "web3-utils": "^1.0.0-beta.55",
+    "zos-lib": "2.4.1"
   },
   "publishConfig": {
     "access": "public"
