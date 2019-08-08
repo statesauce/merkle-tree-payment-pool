@@ -63,7 +63,7 @@ contract("PaymentPool", function(accounts) {
 
     describe("submitPayeeMerkleRoot", function() {
       it("starts a new payment cycle after the payee merkle root is submitted", async function() {
-        let merkleTree = new CumulativePaymentTree(payments);
+        let merkleTree = new CumulativePaymentTree({ create: payments });
         let root = merkleTree.getHexRoot();
         let paymentCycleNumber = await paymentPool.numPaymentCycles();
         assert.equal(
@@ -110,13 +110,15 @@ contract("PaymentPool", function(accounts) {
       });
 
       it("allows a new merkle root to be submitted in a block after the previous payment cycle has ended", async function() {
-        let merkleTree = new CumulativePaymentTree(payments);
+        let merkleTree = new CumulativePaymentTree({ create: payments });
         let root = merkleTree.getHexRoot();
         await paymentPool.submitPayeeMerkleRoot(root);
 
         let updatedPayments = payments.slice();
         updatedPayments[0].amount += 10;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
@@ -132,13 +134,15 @@ contract("PaymentPool", function(accounts) {
       });
 
       it("does not allow 2 merkle roots to be submitted in the same block after the previous payment cycle has ended", async function() {
-        let merkleTree = new CumulativePaymentTree(payments);
+        let merkleTree = new CumulativePaymentTree({ create: payments });
         let root = merkleTree.getHexRoot();
         await paymentPool.submitPayeeMerkleRoot(root);
 
         let updatedPayments = payments.slice();
         updatedPayments[0].amount += 10;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         await assertRevert(
@@ -155,7 +159,7 @@ contract("PaymentPool", function(accounts) {
       });
 
       it("does not allow non-owner to submit merkle root", async function() {
-        let merkleTree = new CumulativePaymentTree(payments);
+        let merkleTree = new CumulativePaymentTree({ create: payments });
         let root = merkleTree.getHexRoot();
         await assertRevert(async () =>
           paymentPool.submitPayeeMerkleRoot(root, { from: accounts[2] })
@@ -178,7 +182,7 @@ contract("PaymentPool", function(accounts) {
       let payeeIndex = 0;
       let payee = payments[payeeIndex].payee;
       let paymentAmount = payments[payeeIndex].amount;
-      let merkleTree = new CumulativePaymentTree(payments);
+      let merkleTree = new CumulativePaymentTree({ create: payments });
       let root = merkleTree.getHexRoot();
       beforeEach(async function() {
         paymentPoolBalance = 100;
@@ -248,7 +252,9 @@ contract("PaymentPool", function(accounts) {
         let updatedPayments = payments.slice();
         let updatedPaymentAmount = 20;
         updatedPayments[payeeIndex].amount = updatedPaymentAmount;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
         let oldPaymentCycle = paymentCycle;
         // do something that causes a block to be mined
@@ -288,7 +294,9 @@ contract("PaymentPool", function(accounts) {
         let aPayee = accounts[1];
         let updatedPayments = payments.slice();
         updatedPayments.push({ payee: aPayee, amount: 0 });
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
@@ -320,7 +328,9 @@ contract("PaymentPool", function(accounts) {
           payee,
           amount: 8
         });
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
         // do something that causes a block to be mined
         await token.mint(accounts[0], 1);
@@ -355,7 +365,7 @@ contract("PaymentPool", function(accounts) {
       let payeeIndex = 0;
       let payee = payments[payeeIndex].payee;
       let paymentAmount = payments[payeeIndex].amount;
-      let merkleTree = new CumulativePaymentTree(payments);
+      let merkleTree = new CumulativePaymentTree({ create: payments });
       let root = merkleTree.getHexRoot();
 
       beforeEach(async function() {
@@ -769,7 +779,9 @@ contract("PaymentPool", function(accounts) {
         let updatedPayments = payments.slice();
         updatedPayments[payeeIndex].amount += 2;
         let updatedPaymentAmount = updatedPayments[payeeIndex].amount;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
@@ -838,7 +850,9 @@ contract("PaymentPool", function(accounts) {
         let updatedPayments = payments.slice();
         updatedPayments[payeeIndex].amount += 2;
         let updatedPaymentAmount = updatedPayments[payeeIndex].amount;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
@@ -911,7 +925,9 @@ contract("PaymentPool", function(accounts) {
         let updatedPayments = payments.slice();
         updatedPayments[payeeIndex].amount += 2;
         let updatedPaymentAmount = updatedPayments[payeeIndex].amount;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
@@ -985,7 +1001,9 @@ contract("PaymentPool", function(accounts) {
         let updatedPayments = payments.slice();
         updatedPayments[payeeIndex].amount += 2;
         let updatedPaymentAmount = updatedPayments[payeeIndex].amount;
-        let updatedMerkleTree = new CumulativePaymentTree(updatedPayments);
+        let updatedMerkleTree = new CumulativePaymentTree({
+          create: updatedPayments
+        });
         let updatedRoot = updatedMerkleTree.getHexRoot();
 
         // do something that causes a block to be mined
