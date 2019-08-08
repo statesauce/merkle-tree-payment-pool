@@ -67,13 +67,3 @@ export default class CumulativePaymentTree extends MerkleTree {
     return proof;
   }
 }
-
-/*
-
-const cpt = require('./src').CumulativePaymentTree
-let payments = [ { payee: '0x40', amount: '534' }, { payee: '0x23', amount: '345'} ]
-let a = new cpt({create: payments })
-let b = new cpt({recreate: { leaves: a.leaves, layers: a.layers}})
-
-
-*/
